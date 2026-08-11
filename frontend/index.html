@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Nexora AI - كشف الأجسام</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px;
+  }
+  h1 { color: #222; }
+  .box {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    width: 500px;
+    text-align: center;
+  }
+  button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  #result-img {
+    max-width: 100%;
+    margin-top: 20px;
+    border-radius: 8px;
+  }
+  ul {
+    text-align: right;
+    margin-top: 16px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Nexora AI - كشف الأجسام</h1>
+
+<div class="box">
+  <input type="file" id="imageInput" accept="image/*">
+  <br>
+  <button onclick="uploadImage()">ارفع وحلل الصورة</button>
+
+  <div id="status"></div>
+  <img id="result-img" style="display:none;">
+  <ul id="detections-list"></ul>
+</div>
+
+<script>
+async function uploadImage() {
+  const input = document.getElementById('imageInput');
+  const status = document.getElementById('status');
+  const img = document.getElementById('result-img');
+  const list = document.getElementById('detections-list');
+
+  if (!input.files.length) {
+    status.innerText = "اختار صورة أولاً";
+    return;
+  }
+
+  status.innerText = "جارٍ التحليل...";
+  list.innerHTML = "";
+  img.style.display = "none";
+
+  const formData = new FormData();
+  formData.append("file", input.files[0]);
+
+  try {
+    const response = await fetch("http://127.0.0.1:8000/upload-image/", {
+      method: "POST",
+      body: formData
+    });
+    const data = await response.json();
+
+    status.innerText = data.ai_analysis.status;
+
+    const filename = data.ai_analysis.processed_image_path.split(/[\\/]/).pop();
+    img.src = "http://127.0.0.1:8000/uploaded_images/" + filename;
+    img.style.display = "block";
+
+    data.ai_analysis.detections.forEach(d => {
+      const li = document.createElement("li");
+      li.innerText = `${d.object} - ثقة: ${(d.confidence * 100).toFixed(0)}%`;
+      list.appendChild(li);
+    });
+
+  } catch (err) {
+    status.innerText = "صار خطأ، تأكد إن السيرفر شغال";
+    console.error(err);
+  }
+}
+</script>
+
+</body>
+</html>
