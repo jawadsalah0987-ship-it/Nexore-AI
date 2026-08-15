@@ -2,103 +2,277 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>Nexora AI - كشف الأجسام</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora-AI | كشف معدات السلامة</title>
 <style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: Arial, sans-serif;
-    background: #f4f4f4;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 40px;
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #0f172a;
+    color: #f1f5f9;
+    min-height: 100vh;
+    padding: 24px 16px;
   }
-  h1 { color: #222; }
-  .box {
-    background: white;
-    padding: 24px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    width: 500px;
+  .container { max-width: 900px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 32px; }
+  header h1 { font-size: 28px; color: #38bdf8; margin-bottom: 8px; }
+  header p { color: #94a3b8; font-size: 14px; }
+
+  .upload-box {
+    border: 2px dashed #334155;
+    border-radius: 16px;
+    padding: 40px 20px;
     text-align: center;
-  }
-  button {
-    background: #2563eb;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
+    background: #1e293b;
     cursor: pointer;
-    margin-top: 10px;
+    transition: 0.2s;
   }
-  #result-img {
-    max-width: 100%;
-    margin-top: 20px;
+  .upload-box:hover, .upload-box.dragover {
+    border-color: #38bdf8;
+    background: #1e2b40;
+  }
+  .upload-box p { color: #94a3b8; margin-top: 10px; font-size: 14px; }
+  .upload-box .icon { font-size: 40px; }
+  #fileInput { display: none; }
+
+  .actions { display: flex; gap: 12px; margin-top: 16px; justify-content: center; }
+  button {
+    background: #38bdf8;
+    color: #0f172a;
+    border: none;
+    padding: 12px 28px;
     border-radius: 8px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.2s;
   }
-  ul {
-    text-align: right;
-    margin-top: 16px;
+  button:hover { background: #0ea5e9; }
+  button:disabled { background: #475569; cursor: not-allowed; }
+  button.secondary { background: #334155; color: #f1f5f9; }
+  button.secondary:hover { background: #475569; }
+
+  .result-section { margin-top: 32px; display: none; }
+  .result-section.show { display: block; }
+
+  .image-wrap {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 0 auto;
+  }
+  #preview { display: block; max-width: 100%; border-radius: 12px; }
+  #overlay { position: absolute; top: 0; left: 0; }
+  .image-holder { text-align: center; }
+
+  .status { text-align: center; color: #94a3b8; margin: 16px 0; font-size: 14px; }
+  .spinner {
+    width: 28px; height: 28px; border: 3px solid #334155;
+    border-top-color: #38bdf8; border-radius: 50%;
+    margin: 0 auto 8px; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .detections {
+    margin-top: 24px;
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .detections h3 { color: #38bdf8; margin-bottom: 12px; font-size: 16px; }
+  .det-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; border-radius: 8px; margin-bottom: 8px;
+    background: #0f172a;
+  }
+  .det-label { display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .conf { color: #94a3b8; font-size: 13px; }
+  .empty { text-align: center; color: #64748b; padding: 20px; font-size: 14px; }
+  .error-box {
+    background: #3f1d1d; color: #fca5a5; padding: 14px;
+    border-radius: 8px; margin-top: 16px; font-size: 14px; text-align: center;
   }
 </style>
 </head>
 <body>
+<div class="container">
+  <header>
+    <h1>🦺 Nexora-AI — كشف معدات السلامة</h1>
+    <p>ارفع صورة من موقع العمل وشوف نتائج الكشف عن الخوذات والسترات العاكسة فوراً</p>
+  </header>
 
-<h1>Nexora AI - كشف الأجسام</h1>
+  <div class="upload-box" id="uploadBox">
+    <div class="icon">📷</div>
+    <p id="uploadText">اضغط هنا أو اسحب صورة لرفعها</p>
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
 
-<div class="box">
-  <input type="file" id="imageInput" accept="image/*">
-  <br>
-  <button onclick="uploadImage()">ارفع وحلل الصورة</button>
+  <div class="actions">
+    <button id="detectBtn" disabled>ابدأ الكشف</button>
+    <button id="resetBtn" class="secondary" style="display:none;">صورة جديدة</button>
+  </div>
 
-  <div id="status"></div>
-  <img id="result-img" style="display:none;">
-  <ul id="detections-list"></ul>
+  <div class="status" id="status"></div>
+
+  <div class="result-section" id="resultSection">
+    <div class="image-holder">
+      <div class="image-wrap">
+        <img id="preview" src="">
+        <canvas id="overlay"></canvas>
+      </div>
+    </div>
+    <div class="detections" id="detections"></div>
+  </div>
 </div>
 
 <script>
-async function uploadImage() {
-  const input = document.getElementById('imageInput');
-  const status = document.getElementById('status');
-  const img = document.getElementById('result-img');
-  const list = document.getElementById('detections-list');
+// ⚠️ عدّل هذا الرابط حسب عنوان السيرفر عندك محلياً
+const API_URL = "http://127.0.0.1:8000/upload-image/";
 
-  if (!input.files.length) {
-    status.innerText = "اختار صورة أولاً";
+const uploadBox = document.getElementById('uploadBox');
+const fileInput = document.getElementById('fileInput');
+const detectBtn = document.getElementById('detectBtn');
+const resetBtn = document.getElementById('resetBtn');
+const status = document.getElementById('status');
+const resultSection = document.getElementById('resultSection');
+const preview = document.getElementById('preview');
+const overlay = document.getElementById('overlay');
+const detectionsBox = document.getElementById('detections');
+const uploadText = document.getElementById('uploadText');
+
+let selectedFile = null;
+
+// ألوان ثابتة لكل فئة (عدّلها حسب فئاتك الفعلية بالـ dataset)
+const classColors = {
+  "helmet": "#22c55e",
+  "hardhat": "#22c55e",
+  "no-helmet": "#ef4444",
+  "no-hardhat": "#ef4444",
+  "vest": "#38bdf8",
+  "safety-vest": "#38bdf8",
+  "no-vest": "#f97316",
+  "person": "#a78bfa"
+};
+function colorFor(label) {
+  return classColors[label.toLowerCase()] || "#facc15";
+}
+
+uploadBox.addEventListener('click', () => fileInput.click());
+uploadBox.addEventListener('dragover', e => { e.preventDefault(); uploadBox.classList.add('dragover'); });
+uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('dragover'));
+uploadBox.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadBox.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+function handleFile(file) {
+  if (!file.type.startsWith('image/')) {
+    showError('الملف المختار مو صورة صالحة');
     return;
   }
+  selectedFile = file;
+  uploadText.textContent = `✅ تم اختيار: ${file.name}`;
+  detectBtn.disabled = false;
+}
 
-  status.innerText = "جارٍ التحليل...";
-  list.innerHTML = "";
-  img.style.display = "none";
+detectBtn.addEventListener('click', async () => {
+  if (!selectedFile) return;
+  detectBtn.disabled = true;
+  status.innerHTML = `<div class="spinner"></div>جاري تحليل الصورة...`;
 
   const formData = new FormData();
-  formData.append("file", input.files[0]);
+  formData.append("file", selectedFile);
 
   try {
-    const response = await fetch("http://127.0.0.1:8000/upload-image/", {
-      method: "POST",
-      body: formData
-    });
-    const data = await response.json();
-
-    status.innerText = data.ai_analysis.status;
-
-    const filename = data.ai_analysis.processed_image_path.split(/[\\/]/).pop();
-    img.src = "http://127.0.0.1:8000/uploaded_images/" + filename;
-    img.style.display = "block";
-
-    data.ai_analysis.detections.forEach(d => {
-      const li = document.createElement("li");
-      li.innerText = `${d.object} - ثقة: ${(d.confidence * 100).toFixed(0)}%`;
-      list.appendChild(li);
-    });
-
+    const res = await fetch(API_URL, { method: "POST", body: formData });
+    if (!res.ok) throw new Error(`فشل الطلب: ${res.status}`);
+    const data = await res.json();
+    status.textContent = "";
+    showResults(selectedFile, data);
   } catch (err) {
-    status.innerText = "صار خطأ، تأكد إن السيرفر شغال";
+    status.textContent = "";
+    showError("تعذر الاتصال بالسيرفر — تأكد إن الباك اند شغال على " + API_URL);
     console.error(err);
+  } finally {
+    detectBtn.disabled = false;
   }
-}
-</script>
+});
 
+function showError(msg) {
+  status.innerHTML = `<div class="error-box">⚠️ ${msg}</div>`;
+}
+
+function showResults(file, data) {
+  const url = URL.createObjectURL(file);
+  preview.src = url;
+  resultSection.classList.add('show');
+  resetBtn.style.display = 'inline-block';
+  detectBtn.style.display = 'none';
+
+  preview.onload = () => {
+    overlay.width = preview.clientWidth;
+    overlay.height = preview.clientHeight;
+    const scaleX = preview.clientWidth / preview.naturalWidth;
+    const scaleY = preview.clientHeight / preview.naturalHeight;
+    const ctx = overlay.getContext('2d');
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+    const analysis = data.ai_analysis || {};
+    const detections = analysis.detections || [];
+    detectionsBox.innerHTML = "";
+
+    if (detections.length === 0) {
+      detectionsBox.innerHTML = `<h3>النتائج</h3><div class="empty">ما تم اكتشاف أي عنصر بهذه الصورة</div>`;
+      return;
+    }
+
+    let html = "<h3>النتائج المكتشفة</h3>";
+    detections.forEach(det => {
+      const label = det.object || "غير معروف";
+      const conf = det.confidence ? (det.confidence * 100).toFixed(1) : "-";
+      const box = det.box || null;
+      const color = colorFor(label);
+
+      if (box && "x1" in box) {
+        const { x1, y1, x2, y2 } = box;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x1 * scaleX, y1 * scaleY, (x2 - x1) * scaleX, (y2 - y1) * scaleY);
+        ctx.fillStyle = color;
+        ctx.font = "13px Segoe UI";
+        ctx.fillText(label, x1 * scaleX + 4, y1 * scaleY - 6 < 10 ? y1 * scaleY + 14 : y1 * scaleY - 6);
+      }
+
+      html += `
+        <div class="det-item">
+          <div class="det-label">
+            <span class="dot" style="background:${color}"></span>
+            <span>${label}</span>
+          </div>
+          <span class="conf">${conf}%</span>
+        </div>`;
+    });
+    detectionsBox.innerHTML = html;
+  };
+}
+
+resetBtn.addEventListener('click', () => {
+  selectedFile = null;
+  fileInput.value = "";
+  uploadText.textContent = "اضغط هنا أو اسحب صورة لرفعها";
+  detectBtn.disabled = true;
+  detectBtn.style.display = 'inline-block';
+  resetBtn.style.display = 'none';
+  resultSection.classList.remove('show');
+  status.textContent = "";
+});
+</script>
 </body>
 </html>

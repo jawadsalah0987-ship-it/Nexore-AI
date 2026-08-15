@@ -4,3 +4,8 @@ __pycache__/
 *.pyc
 *.db
 uploaded_images/
+training/PPE-Detection-2/
+training/download_dataset.py
+backend/runs/
+*.pt
+!yolov8n.pt
