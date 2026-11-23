@@ -9,3 +9,5 @@ training/download_dataset.py
 backend/runs/
 *.pt
 !yolov8n.pt
+training/ppe-workplace-v2/
+training/ppe-4class/
